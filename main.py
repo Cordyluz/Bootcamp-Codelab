@@ -1,6 +1,10 @@
 import maritalk
 import os
-import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+chave=os.getenv("CHAVE")
 
 # está com problema na parte de calcular as calorias, então algumas vezes é necessário reiniciar o programa para funcionar, além disso o programa não considerar o fator se quer emagrecer ou engordar
 # não é uma prioridade, já que tem como fazer hardcoded
@@ -10,19 +14,24 @@ import os
 # (4): opção de mudar a dieta e/ou a meta de calorias
 # (5): para depois: fazer o bagulho de todo o dia ele resetar a contagem de calorias
 # (6): para depois: do jeito que está até o (5) está tudo fixo, ou seja, se você muda a quantidade de calorias ela muda pra sempre. Fazer, então, ser possível
-# o usuário mudar de apenas um dia (para compensar pelo dia anterior) 
-model = maritalk.MariTalk(key="",model="sabia-3")
+# o usuário mudar de apenas um dia (para compensar pelo dia anterior)
+
+
+model = maritalk.MariTalk(key=chave,model="sabia-3")
 prompt_calculo_calorias = """Dado a string 'INFORMAÇÃO', cálcule a quantidade de calorias diárias gastas e retorne somente e apenas o número de calorias calculado (e mais nada). Caso falte informações suficientes, digite 'ERRO' mais quais informações faltaram.
     Exemplos:
     Exemplo 1: INFORMAÇÃO: Tenho 18 anos, 1.75 centimetros de altura, peso 75 quilos e pratico exercícios moderados (musculação) uam vez por semana e sou homem.
     RESPOSTA: 2100
     
-    Exemplo 2 (falta informação): INFORMAÇÃO: Tenho 18 anos.
-    RESPOSTA: ERRO. Falta altura, peso e sexo."""
+    Exemplo 2 (falta informação): INFORMAÇÃO: Foi passado apenas um dos parâmetros, como por exemplo a idade.
+    RESPOSTA: ERRO. Falta informar os outros parâmetros como por exemplo altura, peso, sexo e frequência de exercícios."""
+
 setup_finalizado = False
 calorias = 0
 calorias_contagem = 0
 prompt_input = "INFORMAÇÃO:"+input("Digite sua idade, seu peso, sua altura, seu sexo, o quanto você pesa e o tipo e a frequência de exercícios. Exemplo: Tenho 18 anos, peso 70 quilos, tenho 1.75 de altura, sou homem, faço musculação moderada duas vezes por semana. \n")
+
+
 while(not setup_finalizado):
     resposta = model.generate(prompt_calculo_calorias+" "+prompt_input,max_tokens=200,stopping_tokens=["\n"])["answer"]
     if (resposta[:4]=="ERRO"):
@@ -31,9 +40,9 @@ while(not setup_finalizado):
         continue
     calorias = int(resposta) + 400
     setup_finalizado = True
-    print(calorias)
+    print("Meta de "+calorias+" calorias")
     
-prompt_dieta = f"Faça uma dieta diária para se atingir {calorias} calorias."
+prompt_dieta = "Faça uma dieta diária para se atingir {calorias} calorias."
 dieta = model.generate(prompt_dieta,max_tokens=1000,stopping_tokens=["\n"])["answer"]
 print(dieta)
 
