@@ -146,6 +146,11 @@ if __name__ == "__main__":
             chat.setup_dieta = False
             chat.setup_dieta_feedback = True
         elif parte == 1:
+            prompt_atualizações_dieta = """Você receberá respostas do usuário quanto à dieta feita, determine se ele gosta ou não dá dieta.
+            Enquanto o usuário não mostrar gosto pela dieta, modifique-a segundo os desejos dele, podendo trocar alimentos e refeições.
+            Ao final de cada interação responda com a dieta atualizada, com a contagem de calorias total e de cada alimento segundo o USDA, por final pergunte ao usuário se a dieta está boa para ele.
+            Lembre-se sempre de determinar se a dieta está boa ou não para o usuário.
+            """
             # repita aqui até a dieta estar boa
             # ou seja, se a pessoa pediu a dieta sem ovo mas veio com ovo, aqui é para repetir o processo de criação até acertar a dieta
             # if(message é que a pessoa gostou) (passo 1):
