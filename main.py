@@ -23,9 +23,9 @@ class Chat:
 
 chats: list[Chat] = []
 prompt_direcionamento = """A partir do input do usuário, decida se ele quer contar calorias ou mudar a dieta.
-        O usuário quer contar calorias caso ele fale sobre alguma refeição que fez.
-        Se ele quiser mudar as calorias, digite somente 0. Se ele quiser contar calorias digite somente 1.
-        Se o usuário citar algum alimento ou refeição, digite somente 1.
+        O usuário quer contar calorias caso ele fale sobre alguma refeição que fez, tanto falando que comeu algo, quanto só escrevendo o nome do alimento, nesse caso digite somente 1.
+        O usuário quer trocar de dieta caso reclame sobre a dieta diretamente ou algum prato pertencente a ela, nesse caso digite somente 0.
+        Lembrando: se ele quiser mudar a dieta, digite somente 0. Se ele quiser contar calorias digite somente 1.
         Se ele digitar algo que não esteja relacionado a nenhuma dessas duas coisas (calorias e dieta), então retorne 'ERRO'.
 
         Usuário: Eu quero mudar a dieta.
@@ -45,6 +45,9 @@ prompt_direcionamento = """A partir do input do usuário, decida se ele quer con
 
         Usuário: Comi um peito de frango.
         Resposta: 1
+
+        Usuário: Não gosto de tal refeição da minha dieta.
+        Resposta: 0
         """
 
 if __name__ == "__main__":
