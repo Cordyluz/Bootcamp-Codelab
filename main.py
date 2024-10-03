@@ -113,7 +113,6 @@ if __name__ == "__main__":
             # if(message é que a pessoa gostou) (passo 1):
             # chat.setup_dieta_feedback = False
             # bot.send_message(message.chat.id,"Para atualizar a contagem de calorias, digite o que você comeu ("Comi um prato de arroz, feijão e frango."). Caso você queira mudar a sua dieta ou meta calórica, digite "Quero mudar a minha dieta" ou algo equivalente.")
-            #
             # return
             # if(message é que a pessoa não gostou)
             # faz alguma coisa, volta para o passo 1 para ver se deu certo (vai naturalmente voltar para o passo 1 após a pessoa mandar uma mensagem)
