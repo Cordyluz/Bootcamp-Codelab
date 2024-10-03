@@ -64,7 +64,7 @@ if __name__ == "__main__":
                 return chat
         return None
 
-    def setup_calorias(chat,message, parte): # conferir valor de cut e de bulking (eu botei +400 e -400) e conferir calorias
+    def setup_calorias(chat,message, parte): # conferir valor de cut e de bulking (eu botei +500 e -500) e conferir calorias
         if parte == 0:
             prompt_calculo_calorias = """Você é um bot que calcula a quantidade de calorias diárias gastas pelo usuário a partir das informações dadas por ele.
             A partir das informações dadas pelo usuário, calcule a quantidade de calorias diárias gastas por ele e retorne SOMENTE o número de calorias. 
@@ -85,10 +85,10 @@ if __name__ == "__main__":
             chat.setup_calorias_parte2 = True
             bot.send_message(message.chat.id,"Você quer emagrecer ou ganhar massa?")
         elif parte == 1:
-            prompt_objetivo = """A partir da resposta do usuário, decida se ele quer emagrecer (cut) ou ganhar massa muscular.
-            Caso ele queira emagrecer (cut), retorne -400.
-            Caso ele queira ganhar massa muscular (bulk), retorne 400.
-            Nunca retorne algo além de 400 ou -400. Caso você não consiga determinar se ele quer emagrecer ou ganhar massa muscular, faça uma suposição.
+            prompt_objetivo = """A partir da resposta do usuário, decida se ele quer emagrecer (cut) ou ganhar massa muscular (bulk).
+            Caso ele queira emagrecer (cut), retorne -500.
+            Caso ele queira ganhar massa muscular (bulk), retorne 500.
+            Nunca retorne algo além de 500 ou -500. Caso você não consiga determinar se ele quer emagrecer ou ganhar massa muscular, retorne 0.
             """
 
             objetivo = model.generate(prompt_objetivo+message.text,max_tokens=200,stopping_tokens=["\n"])["answer"]
