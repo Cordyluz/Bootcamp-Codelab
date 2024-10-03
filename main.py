@@ -1,62 +1,181 @@
 import maritalk
 import os
+import telebot
 from dotenv import load_dotenv
+from datetime import date
 
+class Chat:
+    def __init__(self, chat_id: int):
+        self.chat_id = chat_id
+        # self.esperando_mensagem = True
+        self.meta_calorica = 0
+        self.contagem_calorias = 0
+        self.dieta = ""
+        # aqui é uma maracutaia que eu fiz, para permitir vários chats rodarem ao mesmo tempo, as funções setup_dieta e setup_calorias são divididas em partes
+        # e essas variáveis controlam para qual parte o programa vai
+        # a ideia é: pega a primeira mensagem (setup_parte1 = True), faz a primeira parte da função (setup_parte1 = False), 
+        # pega a proxima mensagem (setup_parte2 = True), faz a segunda parte da função (setup_parte2 = False)
+        # não sei como fazer isso de uma forma melhor
+        self.setup_calorias_parte1 = False
+        self.setup_calorias_parte2 = False
+        self.setup_dieta = False
+        self.setup_dieta_feedback = False
 
-load_dotenv()
-chave=os.getenv("CHAVE")
+chats: list[Chat] = []
+prompt_direcionamento = """A partir do input do usuário, decida se ele quer contar calorias ou mudar a dieta.
+        O usuário quer contar calorias caso ele fale sobre alguma refeição que fez.
+        Se ele quiser mudar as calorias, digite somente 0. Se ele quiser contar calorias digite somente 1.
+        Se o usuário citar algum alimento ou refeição, digite somente 1.
+        Se ele digitar algo que não esteja relacionado a nenhuma dessas duas coisas (calorias e dieta), então retorne 'ERRO'.
 
-# está com problema na parte de calcular as calorias, então algumas vezes é necessário reiniciar o programa para funcionar, além disso o programa não considerar o fator se quer emagrecer ou engordar
-# não é uma prioridade, já que tem como fazer hardcoded
-# (1): Otimizar os prompts, acertar a formatação das mensagens, conferir e melhorar acurácia etc...
-# (2): passar para o telegram
-# (3): conferir a dieta, eu não conferi ela
-# (4): opção de mudar a dieta e/ou a meta de calorias
-# (5): para depois: fazer o bagulho de todo o dia ele resetar a contagem de calorias
-# (6): para depois: do jeito que está até o (5) está tudo fixo, ou seja, se você muda a quantidade de calorias ela muda pra sempre. Fazer, então, ser possível
-# o usuário mudar de apenas um dia (para compensar pelo dia anterior)
+        Usuário: Eu quero mudar a dieta.
+        Resposta: 0
+        
+        Usuário: Eu comi um prato de feijão.
+        Resposta: 1
+        
+        Usuário: Fui numa festa ontem.
+        Resposta: ERRO
 
+        Usuário: Não estou gostando da minha dieta.
+        Resposta: 0
+        
+        Usuário: Peito de frango.
+        Resposta: 1
 
-model = maritalk.MariTalk(key=chave,model="sabia-3")
-prompt_calculo_calorias = """Dado a string 'INFORMAÇÃO', cálcule a quantidade de calorias diárias gastas e retorne somente e apenas o número de calorias calculado (e mais nada). Caso falte informações suficientes, digite 'ERRO' mais quais informações faltaram.
-    Exemplos:
-    Exemplo 1: INFORMAÇÃO: Tenho 18 anos, 1.75 centimetros de altura, peso 75 quilos e pratico exercícios moderados (musculação) uam vez por semana e sou homem.
-    RESPOSTA: 2100
+        Usuário: Comi um peito de frango.
+        Resposta: 1
+        """
+
+if __name__ == "__main__":
+    # setup inicial da maritaca e do telegram
+    load_dotenv()
+    CHAVE_MARITACA = os.getenv("CHAVE_MARITACA")
+    CHAVE_TELEGRAM = os.getenv("CHAVE_TELEGRAM")
+    model = maritalk.MariTalk(key=CHAVE_MARITACA,model="sabia-3")
+    bot = telebot.TeleBot(CHAVE_TELEGRAM)
+
+    # setup das variáveis
+    data = date.today() 
+
+    def get_chat(chat_id: int) -> Chat or None:
+        for chat in chats:
+            if chat.chat_id == chat_id:
+                return chat
+        return None
+
+    def setup_calorias(chat,message, parte): # conferir valor de cut e de bulking (eu botei +400 e -400) e conferir calorias
+        if parte == 0:
+            prompt_calculo_calorias = """Você é um bot que calcula a quantidade de calorias diárias gastas pelo usuário a partir das informações dadas por ele.
+            A partir das informações dadas pelo usuário, calcule a quantidade de calorias diárias gastas por ele e retorne SOMENTE o número de calorias. 
+            Não retorne NADA além do número de calorias. Caso falte informações, faça a sua melhor aproximação da quantidade de calorias gastas pelo usuário.
+            NUNCA deixe de retornar apenas o número de calorias, mesmo que talvez esse número esteja errado.
+
+            Usuário: Tenho 18 anos, 1.75 centimetros de altura, peso 75 quilos e pratico exercícios moderados (musculação) uma vez por semana e sou homem.
+            Resposta: 2100
+            
+            Usuário: Tenho 19 anos, 1.78 centimetros de altura, peso 72 quilos e sou homem.
+            Resposta: 2300
+            """
+
+            chat.meta_calorica = int(model.generate(prompt_calculo_calorias+message.text,max_tokens=200,stopping_tokens=["\n"])["answer"])
+            
+            # preparando para a segunda parte da função
+            chat.setup_calorias_parte1 = False
+            chat.setup_calorias_parte2 = True
+            bot.send_message(message.chat.id,"Você quer emagrecer ou ganhar massa?")
+        elif parte == 1:
+            prompt_objetivo = """A partir da resposta do usuário, decida se ele quer emagrecer (cut) ou ganhar massa muscular.
+            Caso ele queira emagrecer (cut), retorne -400.
+            Caso ele queira ganhar massa muscular (bulk), retorne 400.
+            Nunca retorne algo além de 400 ou -400. Caso você não consiga determinar se ele quer emagrecer ou ganhar massa muscular, faça uma suposição.
+            """
+
+            objetivo = model.generate(prompt_objetivo+message.text,max_tokens=200,stopping_tokens=["\n"])["answer"]
+
+            chat.meta_calorica += int(objetivo)
+            bot.send_message(message.chat.id, f"Você comeu 0 de {chat.meta_calorica} calorias.")
+            
+            # preparando para a primeira parte da função setup_dieta
+            bot.send_message(message.chat.id, "Agora, vou fazer a sua dieta. Me fale como você quer que a sua dieta seja feita (Ex: não é para usar ovo).")
+            chat.setup_calorias_parte2 = False
+            # chat.setup_dieta = True # esta comentado pq a setup dieta não está feita ainda
     
-    Exemplo 2 (falta informação): INFORMAÇÃO: Foi passado apenas um dos parâmetros, como por exemplo a idade.
-    RESPOSTA: ERRO. Falta informar os outros parâmetros como por exemplo altura, peso, sexo e frequência de exercícios."""
+    def setup_dieta(chat,message,parte):
+        if parte == 0:
+            # faça aqui a primeira dieta
+            print() # só para não dar problema de identação
+            chat.setup_dieta = False
+            chat.setup_dieta_feedback = True
+        elif parte == 1:
+            # repita aqui até a dieta estar boa
+            # ou seja, se a pessoa pediu a dieta sem ovo mas veio com ovo, aqui é para repetir o processo de criação até acertar a dieta
+            # if(message é que a pessoa gostou) (passo 1):
+            # chat.setup_dieta_feedback = False
+            # bot.send_message(message.chat.id,"Para atualizar a contagem de calorias, digite o que você comeu ("Comi um prato de arroz, feijão e frango."). Caso você queira mudar a sua dieta ou meta calórica, digite "Quero mudar a minha dieta" ou algo equivalente.")
+            #
+            # return
+            # if(message é que a pessoa não gostou)
+            # faz alguma coisa, volta para o passo 1 para ver se deu certo (vai naturalmente voltar para o passo 1 após a pessoa mandar uma mensagem)
+            print() # so para não dar problema de indentação
 
-setup_finalizado = False
-calorias = 0
-calorias_contagem = 0
-prompt_input = "INFORMAÇÃO:"+input("Digite sua idade, seu peso, sua altura, seu sexo, o quanto você pesa e o tipo e a frequência de exercícios. Exemplo: Tenho 18 anos, peso 70 quilos, tenho 1.75 de altura, sou homem, faço musculação moderada duas vezes por semana. \n")
+    # def contagem_calorias(chat,message):
 
+    @bot.message_handler(func=lambda message: True) # o motivo de o bot não funcionar por comandos (/start) é porque eu achei
+    # que seria mais interessante fazer o usuário interagir com o bot somente com linguagem natural, já que isso implicaria usar mais a maritaca
+    def direcionamento(message):
+        global prompt_direcionamento, data
+        chat = get_chat(message.chat.id)
 
-while(not setup_finalizado):
-    resposta = model.generate(prompt_calculo_calorias+" "+prompt_input,max_tokens=200,stopping_tokens=["\n"])["answer"]
-    if (resposta[:4]=="ERRO"):
-        print(resposta)
-        prompt_input += input("Apenas digite o que falta: ")
-        continue
-    calorias = int(resposta) + 400
-    setup_finalizado = True
-    print("Meta de "+calorias+" calorias")
-    
-prompt_dieta = "Faça uma dieta diária para se atingir {calorias} calorias."
-dieta = model.generate(prompt_dieta,max_tokens=1000,stopping_tokens=["\n"])["answer"]
-print(dieta)
+        # setup inicial da dieta e meta calórica
+        if chat is None: 
+            novo_chat = Chat(message.chat.id)
+            chats.append(novo_chat)
+            bot.reply_to(message, "Olá, eu sou o ChiquinhoGaviãoBOT, O bot de nutrição e eu vou te ajudar a alcançar o seu shape dos sonhos. Para isso, eu vou calcular a sua meta diária de calorias e fazer uma dieta para você.")
+            bot.send_message(message.chat.id,"Digite: Eu quero fazer minha dieta.")
+            return
+        
+        # expliquei o porquê eu fiz isso na class chat, mas basicamente é um controle de fluxo para saber em que parte da função o programa deve ir
+        # surge do problema do programa ter que rodar vários chats ao mesmo tempo e funcionar mensagem por mensagem
+        if chat.setup_calorias_parte1:
+            setup_calorias(chat,message,0)
+            return
+        elif chat.setup_calorias_parte2:
+            setup_calorias(chat,message,1)
+            return
+        elif chat.setup_dieta:
+            setup_dieta(chat,message,0)
+            return
+        elif chat.setup_dieta_feedback:
+            setup_dieta(chat,message,1)
+            return
 
-promt_contagem = "Para qualquer refeição feita pelo usuário, retorne apenas e somente a quantidade de calorias desta refeição. Não seja muito exato, caso não consiga calcula faça uma suposição imprecisa da quantidade de calorias. Caso falte informações suficientes, chute um valor de calorias, nunca em hipótese alguma retorne algo além do número de calorias. Exemplo: USUÁRIO: Comi um peito de frango, um prato de arroz e um prato de feijão. RESPOSTA: 500. Exemplo 2 (falta informações): Usuário: Comi um filé de frango RESPOSTA: 250"
-while(True):
-    prompt_refeicao = input()
-    contagem = model.generate(promt_contagem+" "+prompt_refeicao,max_tokens=10,stopping_tokens=["\n"])["answer"]
-    while (contagem[:4]=="ERRO"):
-        print(contagem)
-        prompt_refeicao += input("Apenas digite o que falta: ")
-        contagem = model.generate(promt_contagem+" "+prompt_refeicao,max_tokens=50,stopping_tokens=["\n"])["answer"]
-        continue
-    calorias_contagem += int(contagem)
-    print(calorias_contagem)
-    if (calorias_contagem >= calorias):
-        print("Parabéns. Você atingiu a sua meta diária de calorias.")
-    
+        # reseta a contagem para cada dia novo
+        if (data != date.today()): 
+            chat.contagem_calorias = 0
+            data = date.today()
+
+        # após o setup inicial da dieta e da meta calórica, o usuário só pode fazer duas coisas: mudar a dieta ou contar calorias
+        # a variável direcao serve para dizer ao programa se o usuário quer mudar a dieta (0) ou contar calorias (1)
+        # cabe ao modelo analisar a mensagem e decidir o que o usuário quer fazer
+        direcao = model.generate(prompt_direcionamento+message.text,max_tokens=200,stopping_tokens=["\n"])["answer"]
+        print(direcao)
+
+        if (direcao=='ERRO'):
+            bot.send_message(message.chat.id,"Você digitou algo que não me interessa. Só me interesso por contar calorias e montar dietas!")
+            return
+        
+        try:
+            direcao = int(direcao)
+        except:
+            bot.send_message(message.chat.id,"Algo de errado ocorreu, digite a sua mensagem novamente!")
+            return
+        
+        if (direcao==1):
+            print() # remove depois, só para não dar erro de identação
+            # contagem_calorias(chat,message)
+        elif (direcao==0):
+            bot.send_message(message.chat.id,"Para calcular a sua meta calórica, digite a sua idade, peso, altura e sexo.")
+            chat.setup_calorias_parte1 = True
+
+    bot.infinity_polling()
