@@ -107,6 +107,41 @@ if __name__ == "__main__":
     def setup_dieta(chat,message,parte):
         if parte == 0:
             # faça aqui a primeira dieta
+            prompt_dieta_inicial = """Considerando as respostas anteriores, some o gasto calórico diário do usuário com o modificador de calorias com base em seus objetivos e devolva uma dieta adequada.
+            Uma dieta adequada contém um número próximo de calorias ao resultado dessa soma do gasto calórico diário mais o modificador para as dietas considerando o desejo de perda ou ganho de peso.
+            Siga o banco nutricional do USDA para estimar as calorias dos alimentos, tente também buscar alimentos ricos em proteínas e usualmente considerados saudáveis. Pode incluir suplementação como Whey Protein se julgar adequado.
+            Forneça quantidades de alimentos em unidades métricas usuais para cada alimento, a exemplo: 4 unidades de ovos, 2 fatias de pão, 1 peito de frango grelhado, duas colheres de sopa de pasta de amendoim, 150 gramas de arroz.
+            Segue um modelo abaixo:
+            Café da Manhã
+            1 misto quente = 250 calorias
+            1 xícara grande de café com leite desnatado com adoçante = 75 calorias
+            1/2 mamão papaia = 70 calorias
+            1 iogurte para beber = 150 calorias
+            
+            Lanche
+            1 banana = 90 calorias
+            
+            Almoço
+            1 copo de suco natural de laranja (200ml) = 116 calorias
+            4 colheres sopa de arroz branco = 150 calorias
+            1 concha de feijão = 55 calorias
+            1 filé carne bovina pequeno = 190 calorias
+            1 prato de sobremesa com salada de alface, tomate e repolho roxo com shoyu = 40 calorias
+            3 colheres de sopa de cenoura cozida = 30 calorias
+            2 brigadeiros pequenos = 110 calorias
+            
+            Lanche da tarde
+            1 sanduíche de pão integral com peito de peru, queijo branco, tomate e alface = 185 calorias
+            1 copo de suco de melancia (200ml) = 60 calorias
+            
+            Jantar
+            1 peito de frango grelhado = 190 calorias
+            4 colheres de sopa de arroz com cenoura = 150 calorias
+            1 prato de sobremesa de alface, tomate e repolho roxo com shoyu = 40 calorias
+            1 copo de suco de melancia = 60 calorias
+            
+            TOTAL: 2.011 calorias
+            """
             print() # só para não dar problema de identação
             chat.setup_dieta = False
             chat.setup_dieta_feedback = True
