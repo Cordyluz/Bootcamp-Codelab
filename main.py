@@ -86,7 +86,7 @@ if __name__ == "__main__":
             # preparando para a segunda parte da função
             chat.setup_calorias_parte1 = False
             chat.setup_calorias_parte2 = True
-            bot.send_message(message.chat.id,"Você quer emagrecer ou ganhar massa?")
+            bot.send_message(message.chat.id,"Você quer emagrecer ou ganhar massa muscular?")
         elif parte == 1:
             prompt_objetivo = """A partir da resposta do usuário, decida se ele quer emagrecer (cut) ou ganhar massa muscular (bulk).
             Caso ele queira emagrecer (cut), retorne -500.
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             bot.send_message(message.chat.id, f"Você comeu 0 de {chat.meta_calorica} calorias.")
             
             # preparando para a primeira parte da função setup_dieta
-            bot.send_message(message.chat.id, "Agora, vou fazer a sua dieta. Me fale como você quer que a sua dieta seja feita (Ex: não é para usar ovo).")
+            bot.send_message(message.chat.id, "Agora, vou fazer a sua dieta. Você pode sugerir quaisquer alterações que desejar(exemplo: Não como iogurte).")
             chat.setup_calorias_parte2 = False
             # chat.setup_dieta = True # esta comentado pq a setup dieta não está feita ainda
     
