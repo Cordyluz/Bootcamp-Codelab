@@ -78,7 +78,8 @@ tabela_nutricional = {
     "cenoura":41,
     "brócolis":34,
     "churrasco":289,
-    "pastel":337
+    "pastel":337,
+    "1 barra de proteína":414
 }
 
 if __name__ == "__main__":
@@ -196,6 +197,9 @@ if __name__ == "__main__":
             Resposta: 1
 
             Usuário: Não, não quero salada.
+            Resposta: 0
+
+            Usuário: Não gostei, retire o café da manhã
             Resposta: 0
             """
             
