@@ -1,31 +1,10 @@
 import maritalk
 import os
 import telebot
+import random
+import requests
 from dotenv import load_dotenv
 from datetime import date
-
-
-tabela_nutricional = {
-    "arroz":130,
-    "feijão":155,
-    "frango":239,
-    "linguíça":325,
-    "alface":15,
-    "tomate":18,
-    "pasta de amendoim":588,
-    "ovo":143,
-    "carne vermelha":235,
-    "berinjela":20,
-    "macarrão":158,
-    "hamburguer":300,
-    "queijo":402,
-    "batata inglesa cozida":52,
-    "batata doce cozida":77,
-    "batata frita":312,
-    "pizza":266
-}
-
-
 
 class Chat:
     def __init__(self, chat_id: int):
@@ -47,8 +26,9 @@ class Chat:
 
 chats: list[Chat] = []
 prompt_direcionamento = """A partir do input do usuário, decida se ele quer contar calorias ou mudar a dieta.
-        O usuário quer contar calorias caso ele fale sobre alguma refeição que fez, tanto falando que comeu algo, quanto só escrevendo o nome do alimento, nesse caso digite somente 1.
-        O usuário quer trocar de dieta caso reclame sobre a dieta diretamente ou algum prato pertencente a ela, nesse caso digite somente 0.
+        O usuário quer contar calorias caso ele fale sobre alguma refeição que fez.
+        Se ele quiser mudar as calorias ou a dieta, digite somente 0. Se ele quiser contar calorias digite somente 1.
+        Se o usuário citar algum alimento ou refeição, digite somente 1.
         Lembrando: se ele quiser mudar a dieta, digite somente 0. Se ele quiser contar calorias digite somente 1.
         Se ele digitar algo que não esteja relacionado a nenhuma dessas duas coisas (calorias e dieta), então retorne 'ERRO'.
 
@@ -73,6 +53,25 @@ prompt_direcionamento = """A partir do input do usuário, decida se ele quer con
         Usuário: Não gosto de tal refeição da minha dieta.
         Resposta: 0
         """
+tabela_nutricional = {
+    "arroz":130,
+    "feijão":155,
+    "frango":239,
+    "linguíça":325,
+    "alface":15,
+    "tomate":18,
+    "pasta de amendoim":588,
+    "ovo":143,
+    "carne vermelha":235,
+    "berinjela":20,
+    "macarrão":158,
+    "hamburguer":300,
+    "queijo":402,
+    "batata inglesa cozida":52,
+    "batata doce cozida":77,
+    "batata frita":312,
+    "pizza":266
+}
 
 if __name__ == "__main__":
     # setup inicial da maritaca e do telegram
@@ -124,85 +123,118 @@ if __name__ == "__main__":
             bot.send_message(message.chat.id, f"Você comeu 0 de {chat.meta_calorica} calorias.")
             
             # preparando para a primeira parte da função setup_dieta
-            bot.send_message(message.chat.id, "Agora, vou fazer a sua dieta. Você pode sugerir quaisquer alterações que desejar(exemplo: Não como iogurte).")
+            bot.send_message(message.chat.id, "Agora, vou fazer a sua dieta. Você pode fazer quaisquer sugestões que desejar (Ex: Não bote iogurte na dieta).")
             chat.setup_calorias_parte2 = False
             chat.setup_dieta = True # esta comentado pq a setup dieta não está feita ainda
     
     def setup_dieta(chat,message,parte):
         if parte == 0:
-
-            dieta_sugerida = message.text.lower()
-
             # faça aqui a primeira dieta
-            prompt_dieta_inicial = f"""Considerando as respostas anteriores, some o gasto calórico diário do usuário com o modificador de calorias com base em seus objetivos e devolva uma dieta adequada.
-            Uma dieta adequada contém um número próximo de calorias ao resultado dessa soma do gasto calórico diário mais o modificador para as dietas considerando o desejo de perda ou ganho de peso.
-            Siga o banco nutricional do USDA para estimar as calorias dos alimentos, tente também buscar alimentos ricos em proteínas e usualmente considerados saudáveis. Pode incluir suplementação como Whey Protein se julgar adequado.
-            Forneça quantidades de alimentos em unidades métricas usuais para cada alimento, a exemplo: 4 unidades de ovos, 2 fatias de pão, 1 peito de frango grelhado, duas colheres de sopa de pasta de amendoim, 150 gramas de arroz.
-            
-            Segue um modelo abaixo:
-            Café da Manhã
-            1 misto quente = 250 calorias
-            1 xícara grande de café com leite desnatado com adoçante = 75 calorias
-            1/2 mamão papaia = 70 calorias
-            1 iogurte para beber = 150 calorias
-            
-            Lanche
-            1 banana = 90 calorias
-            
-            Almoço
-            1 copo de suco natural de laranja (200ml) = 116 calorias
-            4 colheres sopa de arroz branco = 150 calorias
-            1 concha de feijão = 55 calorias
-            1 filé carne bovina pequeno = 190 calorias
-            1 prato de sobremesa com salada de alface, tomate e repolho roxo com shoyu = 40 calorias
-            3 colheres de sopa de cenoura cozida = 30 calorias
-            2 brigadeiros pequenos = 110 calorias
-            
-            Lanche da tarde
-            1 sanduíche de pão integral com peito de peru, queijo branco, tomate e alface = 185 calorias
-            1 copo de suco de melancia (200ml) = 60 calorias
-            
-            Jantar
-            1 peito de frango grelhado = 190 calorias
-            4 colheres de sopa de arroz com cenoura = 150 calorias
-            1 prato de sobremesa de alface, tomate e repolho roxo com shoyu = 40 calorias
-            1 copo de suco de melancia = 60 calorias
-            
-            TOTAL: 2.011 calorias
-            
-            Aqui estão as preferências do usuário: {dieta_sugerida}
+            prompt_dieta_inicial = f"""Faça uma dieta baseando-se no seguinte modelo:
 
-            Aqui estão as metas calóricas do usuário: {chat.meta_calorica}.
-            Devolva uma dieta de qualquer forma, como o modelo acima, não desvie a conversa.
-            """
-            
-            try:
-                dieta_inicial = model.generate(prompt_dieta_inicial,max_tokens=1000, stopping_tokens=["\n"])["answer"]
-                bot.send_message(message.chat.id, f"Sua dieta segue abaixo: \n {dieta_inicial}")
-                
-            except Exception as e:
-                bot.send_message(message.chat.id, "Eu não pude formular uma dieta para suas especificações, tente novamente.")
+            Café da manhã (aproximadamente 600 kcal):
+            2 fatias de pão integral (140 kcal)
+            2 colheres de sopa de pasta de amendoim natural (180 kcal)
+            1 banana média (105 kcal)
+            2 ovos mexidos com azeite de oliva (200 kcal)
 
+            Lanche da manhã (aproximadamente 300 kcal):
+            1 iogurte grego natural sem açúcar (150 kcal)
+            1 punhado de amêndoas (30g) (150 kcal)
+
+            Almoço (aproximadamente 700 kcal):
+            150g de peito de frango grelhado (240 kcal)
+            1 xícara de arroz integral cozido (220 kcal)
+            1/2 xícara de feijão preto (100 kcal)
+            Salada à vontade (alface, tomate, pepino, cenoura) com 1 colher de sopa de azeite de oliva (120 kcal)
+            1 batata-doce média assada (120 kcal)
+
+            Lanche da tarde (aproximadamente 300 kcal):
+            1 fatia de pão integral (70 kcal)
+            2 colheres de sopa de guacamole (100 kcal)
+            1 ovo cozido (70 kcal)
+            1 fruta (maçã ou pêra) (60 kcal)
+
+            Jantar (aproximadamente 500 kcal):
+            150g de salmão grelhado (300 kcal)
+            1 xícara de quinoa cozida (120 kcal)
+            Salada verde à vontade com azeite e limão (80 kcal)
+
+            Ceia (aproximadamente 200 kcal):
+            1 copo de leite desnatado ou vegetal (120 kcal)
+            2 colheres de sopa de aveia (80 kcal)
+            Total: 2400 calorias
+            
+            Agora faça uma dieta de {chat.meta_calorica} calorias seguindo as seguintes sugestões: {message}"""
+            
+            dieta_inicial = model.generate(prompt_dieta_inicial,max_tokens=1000)["answer"]
+            bot.send_message(message.chat.id, dieta_inicial)
+            bot.send_message(message.chat.id,"Você gostou da dieta? Se não, fale o que mudar (Ex: Não gostei, tire o ovo).")
+
+            chat.dieta = dieta_inicial
             chat.setup_dieta = False
             chat.setup_dieta_feedback = True
-        elif parte == 1:
-            sugestoes_usuario = message.text.lower()
+        elif parte == 1:            
+            prompt_atualizações_dieta = f"""Determine se a resposta dada foi positiva ou negativa em relação a uma dieta. Caso seja positiva
+            retorne 1 e somente 1, caso seja negativa retorne 0 e somente 0.
+            Lembrando: Se a resposta for positiva em relação a dieta digite apenas 1, se não for digite apenas 0.
+            Usuário: Eu gostei
+            Resposta: 1
             
-            prompt_atualizações_dieta = f"""Você receberá respostas do usuário quanto à dieta feita, determine se ele gosta ou não dá dieta.
-            Enquanto o usuário não mostrar gosto pela dieta, modifique-a segundo os desejos dele, podendo trocar alimentos e refeições.
-            Ao final de cada interação responda com a dieta atualizada, com a contagem de calorias total e de cada alimento segundo o USDA, por final pergunte ao usuário se a dieta está boa para ele.
-            Lembre-se sempre de determinar se a dieta está boa ou não para o usuário.
-            Segue o feedback do usuário: {sugestoes_usuario}
+            Usuário: Eu não gostei, tire o ovo
+            Resposta: 0
+            
+            Usuário: ok
+            Resposta: 1
             """
             
-            
             try:
-                dieta_modificada = model.generate(prompt_atualizações_dieta, max_tokens=800 ,stopping_tokens=["\n"])["answer"]
-                bot.send_message(message.chat.id, f"Sua nova dieta segue abaixo: \n {dieta_modificada} \n Aproveite sua nova delícia!")
-            
+                avaliacao_dieta = int(model.generate(prompt_atualizações_dieta, max_tokens=100 ,stopping_tokens=["\n"])["answer"])
+                if(avaliacao_dieta==1):
+                    chat.setup_dieta_feedback = False
+                    bot.send_message(message.chat.id, "Tudo Pronto! Caso você queira mudar a sua dieta só me fale algo como 'Quero mudar minha dieta'. Agora, para cada refeição que você fizer, me diga o que comeu que eu irei contabiliza-la na sua contagem calórica diária.")
+                    return
+                elif(avaliacao_dieta==0):
+                    # faz alguma nova dieta usando message
+                    chat.setup_dieta_feedback = True
+                    return
             except Exception as e:
-                bot.send_message(message.chat.id, "Não entendo suas novas especificações, tente novamente.")
+                bot.send_message(message.chat.id, "Houve um erro! Caso você ainda não esteja satisfeito com a sua dieta digite 'Quero mudar minha dieta' ou algo equivalente.")
+                chat.setup_dieta_feedback = False
+                return
+
+            chat.setup_dieta_feedback = False
                 
+    def pastebin_create(message,info):
+        # Your API developer key (from Pastebin)
+        api_dev_key = os.getenv("CHAVE_PASTEBIN")
+        # The content of your paste
+        api_paste_code = info
+        # Optional paste name/title
+        api_paste_name = str(random.randint(0,9999))
+        # Optional paste settings (0 = public, 1 = unlisted, 2 = private)
+        api_paste_private = '1'
+        # Optional paste expiration date ('10M' = 10 minutes, '1H' = 1 hour, '1D' = 1 day, 'N' = never)
+        api_paste_expire_date = '1D'
+        # Option to create a new paste
+        api_option = 'paste'
+
+        # URL for Pastebin API
+        url = 'https://pastebin.com/api/api_post.php'
+
+        # Prepare the data for the POST request
+        data = {
+            'api_dev_key': api_dev_key,
+            'api_paste_code': api_paste_code,
+            'api_paste_name': api_paste_name,
+            'api_paste_private': api_paste_private,
+            'api_paste_expire_date': api_paste_expire_date,
+            'api_option': api_option
+        }
+
+        # Send the POST request to the Pastebin API
+        response = requests.post(url, data=data)
+        return response
 
     def contagem_calorias(chat,message):
         
@@ -223,7 +255,7 @@ if __name__ == "__main__":
             
             # Soma as calorias que a Maritaca calculou ao total diário
             chat.contagem_calorias += calorias_totais
-            bot.send_message(message.chat.id, f"Você acaba de consumir {calorias_totais} calorias. Total do dia: {chat.contagem_calorias}. Continue assim e vai ficar monstrão!! \U0001F4AA")
+            bot.send_message(message.chat.id, f"Você acaba de consumir {calorias_totais} calorias. Total do dia: {chat.contagem_calorias} de {chat.meta_calorica}. Continue assim e vai ficar monstrão!! \U0001F4AA")
             
             if chat.contagem_calorias >= chat.meta_calorica and chat.meta_atingida == False:
                 bot.send_message(message.chat.id, "Parabéns! Sua meta diária calórica foi alcançada.")
@@ -235,9 +267,6 @@ if __name__ == "__main__":
             bot.send_message(message.chat.id, "Desculpe-me, não consegui acompanhar essa dieta monstra. Por favor, tente novamente.")
             print(f"Erro ao calcular calorias: {e}")
         
-
-
-
     @bot.message_handler(func=lambda message: True) # o motivo de o bot não funcionar por comandos (/start) é porque eu achei
     # que seria mais interessante fazer o usuário interagir com o bot somente com linguagem natural, já que isso implicaria usar mais a maritaca
     def direcionamento(message):
