@@ -70,7 +70,15 @@ tabela_nutricional = {
     "batata inglesa cozida":52,
     "batata doce cozida":77,
     "batata frita":312,
-    "pizza":266
+    "pizza":266,
+    "lasanha":125,
+    "peixe frito":232,
+    "peixe assado":190,
+    "pasta de amendoim":588,
+    "cenoura":41,
+    "brócolis":34,
+    "churrasco":289,
+    "pastel":337
 }
 
 if __name__ == "__main__":
@@ -186,6 +194,9 @@ if __name__ == "__main__":
             
             Usuário: ok
             Resposta: 1
+
+            Usuário: Não, não quero salada.
+            Resposta: 0
             """
             
             try:
@@ -195,7 +206,55 @@ if __name__ == "__main__":
                     bot.send_message(message.chat.id, "Tudo Pronto! Caso você queira mudar a sua dieta só me fale algo como 'Quero mudar minha dieta'. Agora, para cada refeição que você fizer, me diga o que comeu que eu irei contabiliza-la na sua contagem calórica diária.")
                     return
                 elif(avaliacao_dieta==0):
+                    
+
                     # faz alguma nova dieta usando message
+                    sugestao_dieta = message.text.lower()
+
+                    prompt_nova_dieta=f"""
+                    Com uma meta diária de {chat.meta_calorica} calorias, segue as preferências de dieta: {sugestao_dieta}
+                    Seguindo o modelo abaixo e com base nas informações passadas sobre preferências, simule como um nutricionista uma dieta em formato de texto:
+                    Café da manhã (aproximadamente 600 kcal):
+                    2 fatias de pão integral (140 kcal)
+                    2 colheres de sopa de pasta de amendoim natural (180 kcal)
+                    1 banana média (105 kcal)
+                    2 ovos mexidos com azeite de oliva (200 kcal)
+
+                    Lanche da manhã (aproximadamente 300 kcal):
+                    1 iogurte grego natural sem açúcar (150 kcal)
+                    1 punhado de amêndoas (30g) (150 kcal)
+
+                    Almoço (aproximadamente 700 kcal):
+                    150g de peito de frango grelhado (240 kcal)
+                    1 xícara de arroz integral cozido (220 kcal)
+                    1/2 xícara de feijão preto (100 kcal)
+                    Salada à vontade (alface, tomate, pepino, cenoura) com 1 colher de sopa de azeite de oliva (120 kcal)
+                    1 batata-doce média assada (120 kcal)
+
+                    Lanche da tarde (aproximadamente 300 kcal):
+                    1 fatia de pão integral (70 kcal)
+                    2 colheres de sopa de guacamole (100 kcal)
+                    1 ovo cozido (70 kcal)
+                    1 fruta (maçã ou pêra) (60 kcal)
+
+                    Jantar (aproximadamente 500 kcal):
+                    150g de salmão grelhado (300 kcal)
+                    1 xícara de quinoa cozida (120 kcal)
+                    Salada verde à vontade com azeite e limão (80 kcal)
+
+                    Ceia (aproximadamente 200 kcal):
+                    1 copo de leite desnatado ou vegetal (120 kcal)
+                    2 colheres de sopa de aveia (80 kcal)
+                    Total: 2400 calorias
+
+                    Entregue somente a dieta conforme o modelo, não é preciso nada mais.
+                    """
+
+                    dieta_nova=model.generate(prompt_nova_dieta, max_tokens=1000)["answer"]
+                    bot.send_message(message.chat.id, dieta_nova)
+                    bot.send_message(message.chat.id, "Aqui está sua nova dieta, caso ainda queira realizar mudanças apenas diga algo como 'Quero mudar minha dieta'.")
+                    bot.send_message(message.chat.id, " Agora, para cada refeição que você fizer, me diga o que comeu que eu irei contabiliza-la na sua contagem calórica diária.")
+
                     chat.setup_dieta_feedback = True
                     return
             except Exception as e:
@@ -248,7 +307,7 @@ if __name__ == "__main__":
         necessário para saber quantas calorias há em 300 gramas ou menos de determinado alimento, por exemplo 300 gramas de arroz são 3*130 = 390 calorias.
         Caso você dê uma resposta, não encaminhe para o erro em hipótese alguma."""
 
-        # Resposta da I.A.
+        # Resposta da Maritalk
         try: 
             calorias_calculadas = model.generate(prompt_calculo_calorias, max_tokens=150, stopping_tokens=["\n"])["answer"]
             calorias_totais = int(calorias_calculadas)
